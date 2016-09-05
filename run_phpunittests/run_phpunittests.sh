@@ -52,9 +52,9 @@ if [ $exitstatus -ne 0 ]; then
 fi
 
 # Do the moodle install
-cd $gitdir && git reset --hard $gitbranch
-rm -fr config.php
-rm -fr ${resultfile}
+# cd $gitdir && git reset --hard $gitbranch
+# rm -fr config.php
+# rm -fr ${resultfile}
 
 # To execute the phpunit tests we don't need a real site installed, just the phpunit-prefixed one.
 # For now we are using one template config.php containing all the required vars and then we run the init shell script
