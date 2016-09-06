@@ -103,6 +103,8 @@ if [ $exitstatus -eq 0 ]; then
     fi
 fi
 
+cd ${gitdir}
+
 # Execute the phpunit utility
 # Conditionally
 if [ $exitstatus -eq 0 ]; then
