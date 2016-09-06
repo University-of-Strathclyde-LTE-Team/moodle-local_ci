@@ -103,63 +103,6 @@ if [ $exitstatus -eq 0 ]; then
     fi
 fi
 
-# MDLSITE-1972. Verify that all the test directories in codebase
-# are matched/covered by the definitions in the generated phpunit.xml.
-# Any error will stop execution and fail the job.
-
-# Load all the defined tests
-definedtests=$(grep -r "directory suffix" ${gitdir}/phpunit.xml | sed 's/^[^>]*>\([^<]*\)<.*$/\1/g')
-# Load all the existing tests
-existingtests=$(cd ${gitdir} && find . -name tests | sed 's/^\.\/\(.*\)$/\1/g')
-# Some well-known "tests" that we can ignore here
-ignoretests="local/codechecker/pear/PHP/tests lib/phpexcel/PHPExcel/Shared/JAMA/tests"
-# Unit test classes to look for with each file (must be 1 and only 1). MDLSITE-2096
-# TODO: Some day replace this with the list of abstract classes, from PHPUnit_Framework_TestCase using some classmap
-unittestclasses="basic_testcase advanced_testcase database_driver_testcase externallib_advanced_testcase data_loading_method_test_base question_testcase question_attempt_upgrader_test_base qbehaviour_walkthrough_test_base grade_base_testcase"
-
-# Verify that each existing test is covered by some defined test
-# and that, all the test files have only one phpunit testcase class.
-for existing in ${existingtests}
-do
-    found=""
-    # Skip any existing test defined as ignoretests
-    if [[ ${ignoretests} =~ ${existing} ]]; then
-        echo "NOTE: Ignoring ${existing}, not part of core."
-        continue
-    fi
-    for defined in ${definedtests}
-    do
-        if [[ ${existing} =~ ^${defined}$ ]]; then
-            echo "OK: ${existing} will be executed because there is a matching definition for it."
-            found="1"
-        elif [[ ${existing} =~ ^${defined}/.* ]]; then
-            echo "NOTE: ${existing} will be executed because the ${defined} definition covers it."
-            found="1"
-        fi
-    done
-    if [[ -z ${found} ]]; then
-        # Last chance to skip, directory does not contain test units (files)
-        if [[ -z $(ls ${existing} | grep "_test.php$") ]]; then
-            echo "NOTE: Ignoring ${existing}, does not contain any test unit file."
-            continue;
-        fi
-        echo "ERROR: ${existing} is not matched/covered by any definition in phpunit.xml !"
-        exitstatus=1
-    fi
-    # Look inside all the test files, counting occurrences of $unittestclasses
-    unittestclassesregex=$(echo ${unittestclasses} | sed 's/ /|/g')
-    for testfile in $(ls ${existing} | grep "_test.php$")
-    do
-        classcount=$(grep -iP " extends *(${unittestclassesregex}) *{" ${existing}/${testfile} | wc -l)
-        if [[ ! ${classcount} -eq 1 ]]; then
-            echo "WARNING: ${existing}/${testfile} has incorrect (${classcount}) number of unit test classes."
-            if [[ "${multipleclassiserror}" == "yes" ]]; then
-                exitstatus=1
-            fi
-        fi
-    done
-done
-
 # Execute the phpunit utility
 # Conditionally
 if [ $exitstatus -eq 0 ]; then
